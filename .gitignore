@@ -1,0 +1,70 @@
+# --- Root Git Ignore for SentiCare Monorepo ---
+
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Logs
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (keep examples)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build outputs / caches
+.dist/
+dist/
+build/
+.cache/
+.eslintcache
+coverage/
+**/coverage/
+
+# Next.js / Vercel / Turbopack
+.next/
+**/.next/
+.vercel/
+**/.vercel/
+.turbo/
+**/.turbo/
+out/
+**/out/
+
+# Frontend local envs
+monitoring-frontend/.env.local
+monitoring-frontend/.env.development.local
+monitoring-frontend/.env.production.local
+monitoring-frontend/.env.test.local
+
+# Uploads and runtime files
+uploads/
+**/uploads/
+*.pid
+*.pid.lock
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.seed
+
+# Keep lockfiles committed (do NOT ignore)
+# !package-lock.json
+# !pnpm-lock.yaml
+# !yarn.lock
