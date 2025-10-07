@@ -4,15 +4,23 @@ import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { LuUserCheck as UserCheck } from 'react-icons/lu';
 
 export default function StaffPage() {
+  const { user, isAuthenticated } = useAuth();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (isAuthenticated && user?.role === 'Admin') {
+      fetchStaff();
+    } else if (isAuthenticated) {
+      setForbidden(true);
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?.role]);
 
   const fetchStaff = async () => {
     try {
@@ -20,11 +28,37 @@ export default function StaffPage() {
       const res = await api.get('/auth/users');
       setStaff(res.data.data || []);
     } catch (e) {
+      if (e?.response?.status === 403) {
+        setForbidden(true);
+      }
       console.error('Failed to fetch staff', e);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Staff</h1>
+          <p className="text-gray-600 mb-6">Please log in to view this page.</p>
+          <a href="/login" className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Login</a>
+        </div>
+      </div>
+    );
+  }
+
+  if (forbidden) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access denied</h1>
+          <p className="text-gray-600">This page is restricted to Admin users.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
