@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import { api } from '@/lib/api';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LuUsers as Users,
   LuHeart as Heart,
@@ -21,6 +22,10 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const { joinPatientRoom, leavePatientRoom } = useSocket();
+  const { user } = useAuth();
+  const [staffList, setStaffList] = useState([]);
+  const [selectedStaff, setSelectedStaff] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     if (patientId) {
@@ -39,6 +44,28 @@ export default function PatientDetailPage() {
       console.error('Failed to fetch patient', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      // Admin-only endpoint; if 403, silently ignore
+      const res = await api.get('/auth/users');
+      setStaffList(res.data.data || []);
+    } catch (e) {}
+  };
+
+  const handleAssign = async () => {
+    if (!selectedStaff) return;
+    try {
+      setAssigning(true);
+      await api.patch(`/patients/${patientId}/assign`, { staffIds: [selectedStaff] });
+      await fetchPatient();
+      setSelectedStaff('');
+    } catch (e) {
+      console.error('Failed to assign staff', e);
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -111,6 +138,32 @@ export default function PatientDetailPage() {
                     </div>
                   ) : (
                     <p className="text-gray-500 text-sm">No staff assigned</p>
+                  )}
+
+                  {(user?.role === 'Admin' || user?.role === 'Doctor') && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Assign staff</label>
+                      <div className="flex gap-2">
+                        <select
+                          className="flex-1 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          value={selectedStaff}
+                          onChange={(e) => setSelectedStaff(e.target.value)}
+                          onFocus={() => { if (staffList.length === 0) fetchStaff(); }}
+                        >
+                          <option value="">Select user…</option>
+                          {staffList.map(u => (
+                            <option key={u._id} value={u._id}>{u.firstName} {u.lastName} — {u.role}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={handleAssign}
+                          disabled={!selectedStaff || assigning}
+                          className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {assigning ? 'Assigning…' : 'Assign'}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 

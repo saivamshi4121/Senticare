@@ -89,4 +89,11 @@ router.delete('/:id/assign-staff/:staffId',
   removeStaffFromPatient
 );
 
+// New: PATCH /api/patients/:id/assign (idempotent add)
+router.patch('/:id/assign',
+  authenticateToken,
+  checkRole(['Admin', 'Doctor']),
+  assignStaffToPatient
+);
+
 module.exports = router;

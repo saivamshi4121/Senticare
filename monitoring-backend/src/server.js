@@ -13,6 +13,8 @@ dotenv.config();
 const authRoutes = require('./routes/authRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const logsRoutes = require('./routes/logsRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Import middleware
 const { authRateLimit } = require('./middleware/authMiddleware');
@@ -101,6 +103,8 @@ app.use('/api/auth/forgot-password', authRateLimit(3, 60 * 60 * 1000)); // 3 att
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/logs', logsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 handler (Express 5: avoid wildcard path string)
 app.use((req, res) => {

@@ -1,6 +1,8 @@
 const Alert = require('../models/Alert');
 const Patient = require('../models/Patient');
 const User = require('../models/User');
+const ActivityLog = require('../models/ActivityLog');
+const { sendEmail } = require('../utils/emailService');
 
 // Get all alerts with pagination and filtering
 const getAllAlerts = async (req, res) => {
@@ -140,6 +142,21 @@ const createAlert = async (req, res) => {
       io.emit('newAlert', populatedAlert);
     }
 
+    // Log activity
+    try { await ActivityLog.create({ user: req.user.id, action: 'ALERT_CREATED', targetType: 'Alert', targetId: alert._id.toString(), metadata: { priority: alert.priority, type: alert.type } }); } catch {}
+
+    // Send email for critical alerts (best-effort)
+    try {
+      if (alert.priority === 'Critical') {
+        await sendEmail({
+          to: process.env.ALERT_EMAIL_TO || process.env.EMAIL_USER,
+          subject: `[Critical] ${alert.title}`,
+          text: `Critical alert for patient ${alert.patient}: ${alert.description}`,
+          html: `<p><strong>Critical alert</strong></p><p>${alert.description}</p>`
+        });
+      }
+    } catch {}
+
     res.status(201).json({
       success: true,
       message: 'Alert created successfully',
@@ -178,6 +195,7 @@ const updateAlert = async (req, res) => {
     if (io) {
       io.emit('alertUpdated', alert);
     }
+    try { await ActivityLog.create({ user: req.user.id, action: 'ALERT_UPDATED', targetType: 'Alert', targetId: alert._id.toString() }); } catch {}
 
     res.json({
       success: true,
@@ -252,6 +270,7 @@ const acknowledgeAlert = async (req, res) => {
     if (io) {
       io.emit('alertAcknowledged', alert);
     }
+    try { await ActivityLog.create({ user: req.user.id, action: 'ALERT_ACK', targetType: 'Alert', targetId: alert._id.toString() }); } catch {}
 
     res.json({
       success: true,
@@ -306,6 +325,7 @@ const resolveAlert = async (req, res) => {
     if (io) {
       io.emit('alertResolved', alert);
     }
+    try { await ActivityLog.create({ user: req.user.id, action: 'ALERT_RESOLVED', targetType: 'Alert', targetId: alert._id.toString() }); } catch {}
 
     res.json({
       success: true,
@@ -359,6 +379,7 @@ const escalateAlert = async (req, res) => {
     if (io) {
       io.emit('alertEscalated', updatedAlert);
     }
+    try { await ActivityLog.create({ user: req.user.id, action: 'ALERT_ESCALATED', targetType: 'Alert', targetId: updatedAlert._id.toString(), metadata: { level: updatedAlert.escalationLevel } }); } catch {}
 
     res.json({
       success: true,

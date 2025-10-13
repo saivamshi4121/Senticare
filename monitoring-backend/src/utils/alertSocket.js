@@ -38,6 +38,9 @@ const configureSocket = (server) => {
     }
   });
 
+  // WebRTC room management
+  const activeRooms = new Map();
+
   // Connection handling
   io.on('connection', (socket) => {
     console.log(`User ${socket.userId} connected with role ${socket.userRole}`);
@@ -165,9 +168,91 @@ const configureSocket = (server) => {
       });
     });
 
+    // WebRTC signaling events
+    socket.on('join-webrtc-room', (roomId, callback) => {
+      socket.join(`webrtc:${roomId}`);
+      console.log(`User ${socket.userId} joined WebRTC room ${roomId}`);
+      
+      // Track active WebRTC rooms
+      if (!activeRooms.has(roomId)) {
+        activeRooms.set(roomId, {
+          participants: new Set(),
+          createdAt: new Date()
+        });
+      }
+      activeRooms.get(roomId).participants.add(socket.id);
+      
+      // Notify others in the room
+      socket.to(`webrtc:${roomId}`).emit('webrtc-user-joined', {
+        userId: socket.userId,
+        socketId: socket.id,
+        userRole: socket.userRole
+      });
+      
+      callback({ success: true, roomId, participantCount: activeRooms.get(roomId).participants.size });
+    });
+    
+    socket.on('leave-webrtc-room', (roomId) => {
+      socket.leave(`webrtc:${roomId}`);
+      console.log(`User ${socket.userId} left WebRTC room ${roomId}`);
+      
+      if (activeRooms.has(roomId)) {
+        activeRooms.get(roomId).participants.delete(socket.id);
+        if (activeRooms.get(roomId).participants.size === 0) {
+          activeRooms.delete(roomId);
+        }
+      }
+      
+      socket.to(`webrtc:${roomId}`).emit('webrtc-user-left', {
+        userId: socket.userId,
+        socketId: socket.id
+      });
+    });
+    
+    // WebRTC offer/answer/ice-candidate forwarding
+    socket.on('webrtc-offer', (data) => {
+      socket.to(`webrtc:${data.roomId}`).emit('webrtc-offer', {
+        offer: data.offer,
+        from: socket.id,
+        fromUserId: socket.userId,
+        fromUserRole: socket.userRole
+      });
+    });
+    
+    socket.on('webrtc-answer', (data) => {
+      socket.to(`webrtc:${data.roomId}`).emit('webrtc-answer', {
+        answer: data.answer,
+        from: socket.id,
+        fromUserId: socket.userId,
+        fromUserRole: socket.userRole
+      });
+    });
+    
+    socket.on('webrtc-ice-candidate', (data) => {
+      socket.to(`webrtc:${data.roomId}`).emit('webrtc-ice-candidate', {
+        candidate: data.candidate,
+        from: socket.id,
+        fromUserId: socket.userId
+      });
+    });
+
     // Handle disconnect
     socket.on('disconnect', (reason) => {
       console.log(`User ${socket.userId} disconnected: ${reason}`);
+      
+      // Clean up from all WebRTC rooms
+      activeRooms.forEach((room, roomId) => {
+        if (room.participants.has(socket.id)) {
+          room.participants.delete(socket.id);
+          if (room.participants.size === 0) {
+            activeRooms.delete(roomId);
+          }
+          socket.to(`webrtc:${roomId}`).emit('webrtc-user-left', {
+            userId: socket.userId,
+            socketId: socket.id
+          });
+        }
+      });
     });
   });
 
@@ -306,6 +391,48 @@ const getOnlineUsersByDepartment = (io, department) => {
   return sockets.filter(socket => socket.userDepartment === department).length;
 };
 
+// WebRTC utility functions
+const getActiveWebRTCRooms = (io) => {
+  const rooms = [];
+  const activeRooms = new Map();
+  
+  io.sockets.adapter.rooms.forEach((sockets, roomName) => {
+    if (roomName.startsWith('webrtc:')) {
+      const roomId = roomName.replace('webrtc:', '');
+      rooms.push({
+        roomId,
+        participantCount: sockets.size,
+        participants: Array.from(sockets)
+      });
+    }
+  });
+  
+  return rooms;
+};
+
+const getWebRTCRoomInfo = (io, roomId) => {
+  const room = io.sockets.adapter.rooms.get(`webrtc:${roomId}`);
+  if (!room) return null;
+  
+  const participants = [];
+  room.forEach(socketId => {
+    const socket = io.sockets.sockets.get(socketId);
+    if (socket) {
+      participants.push({
+        socketId,
+        userId: socket.userId,
+        userRole: socket.userRole
+      });
+    }
+  });
+  
+  return {
+    roomId,
+    participantCount: room.size,
+    participants
+  };
+};
+
 module.exports = {
   configureSocket,
   emitNewAlert,
@@ -320,5 +447,7 @@ module.exports = {
   emitRoleNotification,
   getOnlineUsersCount,
   getOnlineUsersByRole,
-  getOnlineUsersByDepartment
+  getOnlineUsersByDepartment,
+  getActiveWebRTCRooms,
+  getWebRTCRoomInfo
 };
