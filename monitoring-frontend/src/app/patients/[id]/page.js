@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -33,9 +33,9 @@ export default function PatientDetailPage() {
       joinPatientRoom(patientId);
       return () => leavePatientRoom(patientId);
     }
-  }, [patientId]);
+  }, [patientId, fetchPatient, joinPatientRoom, leavePatientRoom]);
 
-  const fetchPatient = async () => {
+  const fetchPatient = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get(`/patients/${patientId}`);
@@ -45,7 +45,7 @@ export default function PatientDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [patientId]);
 
   const fetchStaff = async () => {
     try {

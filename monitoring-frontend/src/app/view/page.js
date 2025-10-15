@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import WebRTCViewer from '@/components/WebRTCViewer';
 import Navbar from '@/components/Navbar';
 
-export default function ViewPage() {
+function ViewPageContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -93,7 +93,7 @@ export default function ViewPage() {
                 <ul className="mt-1 ml-4 space-y-1">
                   <li>• Check firewall settings</li>
                   <li>• Try using a different browser</li>
-                  <li>• Ensure you're on a stable network</li>
+                  <li>• Ensure you&apos;re on a stable network</li>
                 </ul>
               </div>
             </div>
@@ -113,5 +113,17 @@ export default function ViewPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function ViewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ViewPageContent />
+    </Suspense>
   );
 }

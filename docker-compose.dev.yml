@@ -1,0 +1,32 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+services:
+  backend:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./monitoring-backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:5000
+    volumes:
+      - ./monitoring-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+  mongo:
+    ports:
+      - "27017:27017"
+    # Enable MongoDB logs in development
+    command: mongod --logpath /var/log/mongodb/mongod.log --logappend

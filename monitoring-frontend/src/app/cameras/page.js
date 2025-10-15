@@ -95,7 +95,7 @@ export default function CamerasPage() {
                 For Publishers
               </h3>
               <ol className="space-y-2 text-sm text-blue-800">
-                <li>1. Click "Publish Camera" to start streaming</li>
+                <li>1. Click &quot;Publish Camera&quot; to start streaming</li>
                 <li>2. Allow camera and microphone access</li>
                 <li>3. Share the generated Room ID with viewers</li>
                 <li>4. Keep the tab open while streaming</li>
@@ -109,7 +109,7 @@ export default function CamerasPage() {
               </h3>
               <ol className="space-y-2 text-sm text-green-800">
                 <li>1. Get a Room ID from a publisher</li>
-                <li>2. Click "View Streams" and enter the Room ID</li>
+                <li>2. Click &quot;View Streams&quot; and enter the Room ID</li>
                 <li>3. Wait for the stream to connect</li>
                 <li>4. Multiple viewers can watch the same stream</li>
               </ol>
