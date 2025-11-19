@@ -22,7 +22,10 @@ const {
   getUsersByRole,
   getUsersByDepartment
 } = require('../controllers/authController');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { 
+  authenticateToken,
+  authenticateRefreshToken
+} = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
 
 // Public routes
@@ -35,7 +38,7 @@ router.post('/resend-verification', resendVerificationEmail);
 
 // Protected routes
 router.post('/logout', authenticateToken, logout);
-router.post('/refresh-token', authenticateToken, refreshToken);
+router.post('/refresh-token', authenticateRefreshToken, refreshToken);
 router.post('/change-password', authenticateToken, changePassword);
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, updateProfile);
